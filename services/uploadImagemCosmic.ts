@@ -2,15 +2,15 @@ import multer from "multer";
 import cosmicjs from "cosmicjs";
 
 const {
-    CHAVE_GRAVACAO_AVATRES,
+    CHAVE_GRAVACAO_AVATARES,
     CHAVE_GRAVACAO_PUBLICACOES,
-    BUCKET_AVATRES,
-    BUCKET_PUBLICACOES,} = process.env;
+    BUCKET_AVATARES,
+    BUCKET_PUBLICACOES} = process.env;
 
 const Cosmic = cosmicjs();
-const BUCKETAVATRES = Cosmic.bucket({
-    slug: BUCKET_AVATRES,
-    write_key: CHAVE_GRAVACAO_AVATRES
+const bucketAvatares = Cosmic.bucket({
+    slug: BUCKET_AVATARES,
+    write_key: CHAVE_GRAVACAO_AVATARES
 });
 
 const bucketPublicacoes = Cosmic.bucket({
@@ -19,24 +19,28 @@ const bucketPublicacoes = Cosmic.bucket({
 });
 
 const storage = multer.memoryStorage();
-const upload = multer({storage : storage});
+const updload = multer({storage : storage});
 
 const uploadImagemCosmic = async(req : any) => {
-    console.log('uploadImagemCosmic', req);
     if(req?.file?.originalname){
+
+        if(!req.file.originalname.includes('.png') &&
+            !req.file.originalname.includes('.jpg') && 
+            !req.file.originalname.includes('.jpeg')){
+                throw new Error('Extensao da imagem invalida');
+        } 
+
         const media_object = {
             originalname: req.file.originalname,
             buffer : req.file.buffer
         };
 
-        console.log('uploadImagemCosmic url', req.url);
-        console.log('uploadImagemCosmic media_object', media_object);
-        if(req.url && req.url.includes('publicação')){
+        if(req.url && req.url.includes('publicacao')){
             return await bucketPublicacoes.addMedia({media : media_object});
         }else{
-
-        } 
+            return await bucketAvatares.addMedia({media : media_object});
+        }
     }
 }
 
-export {upload,uploadImagemCosmic};
+export {updload, uploadImagemCosmic};

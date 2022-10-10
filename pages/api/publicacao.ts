@@ -1,28 +1,52 @@
-import type { NextApiRequest, NextApiResponse} from 'next';
-import type { respostaPadraoMsg } from '../../types/respostasPadraoMsg';
+import type {NextApiResponse} from 'next';
+import type {respostaPadraoMsg} from '../../types/respostasPadraoMsg';
 import nc from 'next-connect';
-import { upload, uploadImagemCosmic} from '../../services/uploadImagemCosmic';
-import { conectarMongoDB } from '../../middlewares/conectarMongoDB';
-import { validarToken } from '../../middlewares/validarTokenJWT';
+import {updload, uploadImagemCosmic} from '../../services/uploadImagemCosmic';
+import {conectarMongoDB} from '../../middlewares/conectarMongoDB';
+import {validarToken} from '../../middlewares/validarTokenJWT';
+import {PublicacaoModel} from '../../models/PublicacaoModel';
+import {UsuarioModel} from '../../models/UsuarioModel';
+import { politicaCORS } from '../../middlewares/politicaCORS';
 
 const handler = nc()
-    .use(upload.single('file'))
-    .post(async (req : NextApiRequest, res : NextApiResponse<respostaPadraoMsg>) => {
-      
+    .use(updload.single('file'))
+    .post(async (req : any, res : NextApiResponse<respostaPadraoMsg>) => {
         try{
-            const {descricao, file} = req?.body;
+            const {userId} = req.query;
+            const usuario = await UsuarioModel.findById(userId);
+            if(!usuario){
+                return res.status(400).json({erro : 'Usuario nao encontrado'});
+            }
+
+            if(!req || !req.body){
+                return res.status(400).json({erro : 'Parametros de entrada nao informados'});
+            }
+            const {descricao} = req?.body;
 
             if(!descricao || descricao.length < 2){
-                return res.status(400).json({erro : 'Descrição não é válida'});
+                return res.status(400).json({erro : 'Descricao nao e valida'});
             }
     
-            if(!descricao){
-                return res.status(400).json({erro : 'Imagem é obrigatória'});
+            if(!req.file || !req.file.originalname){
+                return res.status(400).json({erro : 'Imagem e obrigatoria'});
             }
-            return res.status(200).json({msg : 'Publicação está válida'});
+
+            const image = await uploadImagemCosmic(req);
+            const publicacao = {
+                idUsuario : usuario._id,
+                descricao,
+                foto : image.media.url,
+                data : new Date()
+            }
+
+            usuario.publicacoes++;
+            await UsuarioModel.findByIdAndUpdate({_id : usuario._id}, usuario);
+
+            await PublicacaoModel.create(publicacao);
+            return res.status(200).json({msg : 'Publicacao criada com sucesso'});
         }catch(e){
             console.log(e);
-            return res.status(400).json({erro : 'Erro ao cadastrar publicação'});
+            return res.status(400).json({erro : 'Erro ao cadastrar publicacao'});
         }
 });
 
@@ -32,4 +56,4 @@ export const config = {
     }
 }
 
-export default validarToken(conectarMongoDB(handler));
+export default politicaCORS(validarToken(conectarMongoDB(handler))); 
