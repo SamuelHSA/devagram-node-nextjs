@@ -1,9 +1,9 @@
 import type {NextApiRequest, NextApiResponse, NextApiHandler} from 'next';
-import type {RespostaPadraoMsg} from '../types/RespostaPadraoMsg';
+import type {respostaPadraoMsg} from '../types/respostasPadraoMsg';
 import NextCors from 'nextjs-cors';
 
 export const politicaCORS = (handler : NextApiHandler) =>
-    async (req : NextApiRequest, res : NextApiResponse<RespostaPadraoMsg>) => {
+    async (req : NextApiRequest, res : NextApiResponse<respostaPadraoMsg>) => {
     try{
         await NextCors(req, res, {
             origin : '*',
@@ -13,7 +13,7 @@ export const politicaCORS = (handler : NextApiHandler) =>
 
         return handler(req, res);
     }catch(e){
-        console.log('Erro ao tratar a politica de CORS:', e);
-        return res.status(500).json({erro : 'Ocorreu erro ao tratar a politica de CORS'});
+        console.log('Erro ao tratar a política de CORS:', e);
+        return res.status(500).json({erro : 'Ocorreu erro ao tratar a política de CORS'});
     }
 }
